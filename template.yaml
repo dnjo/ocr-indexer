@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ocr-indexer
+
+Resources:
+
+  OcrIndexerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/ocr-indexer-1.0.jar
+      Handler: ocrindexer.App::handleRequest
+      Runtime: java8
+      MemorySize: 256
+      Timeout: 60
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-2ead7f5f
+        SubnetIds:
+          - subnet-5d218607
+          - subnet-824a2fe4
+      Role: arn:aws:iam::334165208394:role/lambda-executor
+      Events:
+        OcrResults:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: results/
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "ocr-results.dnjo.net"
