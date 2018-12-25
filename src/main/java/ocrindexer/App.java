@@ -13,9 +13,9 @@ import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Update;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +28,7 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
  * Handler for requests to Lambda function.
  */
 public class App implements RequestHandler<S3EventNotification, Object> {
-    private static final Logger logger = LogManager.getLogger(App.class);
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     public Object handleRequest(final S3EventNotification input, final Context context) {
         logger.debug("Got S3 data event: '{}'", input);
@@ -68,7 +68,7 @@ public class App implements RequestHandler<S3EventNotification, Object> {
             String output = "{ \"success\": \"true\" }";
             return new GatewayResponse(output, headers, 200);
         } catch (Exception e) {
-            logger.error(e);
+            logger.error("Got an error while indexing", e);
             return new GatewayResponse("{}", headers, 500);
         }
     }
