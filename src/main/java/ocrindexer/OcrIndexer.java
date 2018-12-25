@@ -27,8 +27,8 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 /**
  * Handler for requests to Lambda function.
  */
-public class App implements RequestHandler<S3EventNotification, Object> {
-    private static final Logger logger = LoggerFactory.getLogger(App.class);
+public class OcrIndexer implements RequestHandler<S3EventNotification, Object> {
+    private static final Logger logger = LoggerFactory.getLogger(OcrIndexer.class);
 
     public Object handleRequest(final S3EventNotification input, final Context context) {
         logger.debug("Got S3 data event: '{}'", input);
