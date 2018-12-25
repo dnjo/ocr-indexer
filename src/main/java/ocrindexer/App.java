@@ -13,6 +13,8 @@ import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Update;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.Strings;
 
 import java.util.HashMap;
@@ -26,56 +28,67 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
  * Handler for requests to Lambda function.
  */
 public class App implements RequestHandler<S3EventNotification, Object> {
-    public Object handleRequest(final S3EventNotification input, final Context context) {
-        AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
-        GetParameterResult ocrEsUrl = ssmClient.getParameter(new GetParameterRequest().withName("ocrEsUrl"));
+    private static final Logger logger = LogManager.getLogger(App.class);
 
-        System.out.println("Got here 1");
-        System.out.println(input.toJson());
-        JestClientFactory factory = new JestClientFactory();
-        factory.setHttpClientConfig(new HttpClientConfig
-                .Builder(ocrEsUrl.getParameter().getValue())
-                .build());
-        JestClient client = factory.getObject();
+    public Object handleRequest(final S3EventNotification input, final Context context) {
+        logger.debug("Got S3 data event: '{}'", input);
 
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
 
         try {
+            JestClient client = buildJestClient();
+            AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
+
             for (S3EventNotification.S3EventNotificationRecord record : input.getRecords()) {
                 S3EventNotification.S3Entity s3Input = record.getS3();
-                AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
+                logger.info("Getting object in bucket '{}' with key '{}'", s3Input.getBucket().getName(), s3Input.getObject().getKey());
                 String inputObject = s3.getObjectAsString(s3Input.getBucket().getName(), s3Input.getObject().getKey());
+                logger.debug("Got object to index: '{}'", inputObject);
 
-                System.out.println(String.format("Got input object: '%s'", inputObject));
-                System.out.println("Got here 2");
-
-                Pattern pattern = Pattern.compile("([^/]+)$");
-                Matcher matcher = pattern.matcher(s3Input.getObject().getKey());
-                matcher.find();
                 String updateContent = Strings.toString(jsonBuilder().startObject()
                         .field("doc_as_upsert", true)
                         .startObject("doc")
                         .field("ocrText", inputObject)
                         .endObject()
                         .endObject());
+                String documentId = parseDocumentIdFromKey(s3Input.getObject().getKey());
                 Update update = new Update.Builder(updateContent)
-                        .id(matcher.group(1))
+                        .id(documentId)
                         .index("results")
                         .type("result")
                         .build();
-                client.execute(update);
 
-                System.out.println("Got here 3");
+                logger.info("Updating document with ID '{}'", documentId);
+                client.execute(update);
             }
 
+            logger.info("Finished indexing");
             String output = "{ \"success\": \"true\" }";
             return new GatewayResponse(output, headers, 200);
         } catch (Exception e) {
-            System.out.println("Got error");
-            System.out.println(e);
+            logger.error(e);
             return new GatewayResponse("{}", headers, 500);
         }
+    }
+
+    private String parseDocumentIdFromKey(String key) {
+        Pattern pattern = Pattern.compile("([^/]+)$");
+        Matcher matcher = pattern.matcher(key);
+        if (!matcher.find()) {
+            throw new IllegalArgumentException("Could not parse document ID from key");
+        }
+        return matcher.group(1);
+    }
+
+    private JestClient buildJestClient() {
+        AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
+        GetParameterResult ocrEsUrl = ssmClient.getParameter(new GetParameterRequest().withName("ocrEsUrl"));
+        JestClientFactory factory = new JestClientFactory();
+        factory.setHttpClientConfig(new HttpClientConfig
+                .Builder(ocrEsUrl.getParameter().getValue())
+                .build());
+        return factory.getObject();
     }
 }
