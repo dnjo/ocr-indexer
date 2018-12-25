@@ -20,8 +20,8 @@ import static ocrindexer.Jest.buildUpsertAction;
 /**
  * Handler for requests to Lambda function.
  */
-public class OcrIndexer implements RequestHandler<S3EventNotification, Object> {
-    private static final Logger logger = LoggerFactory.getLogger(OcrIndexer.class);
+public class Indexer implements RequestHandler<S3EventNotification, Object> {
+    private static final Logger logger = LoggerFactory.getLogger(Indexer.class);
 
     public Object handleRequest(final S3EventNotification input, final Context context) {
         logger.debug("Got S3 data event: '{}'", input);
