@@ -16,15 +16,7 @@ import java.io.IOException;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class Jest {
-    static JestClient buildJestClient() {
-        AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
-        GetParameterResult ocrEsUrl = ssmClient.getParameter(new GetParameterRequest().withName("ocrEsUrl"));
-        JestClientFactory factory = new JestClientFactory();
-        factory.setHttpClientConfig(new HttpClientConfig
-                .Builder(ocrEsUrl.getParameter().getValue())
-                .build());
-        return factory.getObject();
-    }
+    static final JestClient CLIENT = buildJestClient();
 
     static class FieldValue {
         private final String name;
@@ -49,5 +41,15 @@ public class Jest {
                 .index("results")
                 .type("result")
                 .build();
+    }
+
+    private static JestClient buildJestClient() {
+        AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
+        GetParameterResult ocrEsUrl = ssmClient.getParameter(new GetParameterRequest().withName("ocrEsUrl"));
+        JestClientFactory factory = new JestClientFactory();
+        factory.setHttpClientConfig(new HttpClientConfig
+                .Builder(ocrEsUrl.getParameter().getValue())
+                .build());
+        return factory.getObject();
     }
 }

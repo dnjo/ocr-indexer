@@ -6,7 +6,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.searchbox.client.JestClient;
 import io.searchbox.core.Update;
 import ocrindexer.Jest.FieldValue;
 import org.slf4j.Logger;
@@ -19,7 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static ocrindexer.Jest.buildJestClient;
 import static ocrindexer.Jest.buildUpsertAction;
 
 public class Uploader implements RequestHandler<Map, Object> {
@@ -62,9 +60,8 @@ public class Uploader implements RequestHandler<Map, Object> {
                     new FieldValue("type", contentType),
                     new FieldValue("s3Bucket", bucket),
                     new FieldValue("s3Key", key));
-            JestClient client = buildJestClient();
             logger.info("Indexing document with ID {}", id);
-            client.execute(updateAction);
+            Jest.CLIENT.execute(updateAction);
 
             Map<String, String> result = new HashMap<>();
             result.put("id", id);

@@ -5,7 +5,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.event.S3EventNotification;
-import io.searchbox.client.JestClient;
 import io.searchbox.core.Update;
 import ocrindexer.Jest.FieldValue;
 import org.slf4j.Logger;
@@ -16,7 +15,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static ocrindexer.Jest.buildJestClient;
 import static ocrindexer.Jest.buildUpsertAction;
 
 /**
@@ -33,7 +31,6 @@ public class OcrIndexer implements RequestHandler<S3EventNotification, Object> {
         headers.put("X-Custom-Header", "application/json");
 
         try {
-            JestClient client = buildJestClient();
             AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
 
             for (S3EventNotification.S3EventNotificationRecord record : input.getRecords()) {
@@ -45,7 +42,7 @@ public class OcrIndexer implements RequestHandler<S3EventNotification, Object> {
                 String documentId = parseDocumentIdFromKey(s3Input.getObject().getKey());
                 Update updateAction = buildUpsertAction(documentId, new FieldValue("ocrText", inputObject));
                 logger.info("Updating document with ID '{}'", documentId);
-                client.execute(updateAction);
+                Jest.CLIENT.execute(updateAction);
             }
 
             logger.info("Finished indexing");
