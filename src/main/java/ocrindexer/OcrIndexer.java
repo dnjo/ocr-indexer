@@ -5,15 +5,9 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.event.S3EventNotification;
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement;
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClientBuilder;
-import com.amazonaws.services.simplesystemsmanagement.model.GetParameterRequest;
-import com.amazonaws.services.simplesystemsmanagement.model.GetParameterResult;
 import io.searchbox.client.JestClient;
-import io.searchbox.client.JestClientFactory;
-import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Update;
-import org.elasticsearch.common.Strings;
+import ocrindexer.Jest.FieldValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +16,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static ocrindexer.Jest.buildJestClient;
+import static ocrindexer.Jest.buildUpsertAction;
 
 /**
  * Handler for requests to Lambda function.
@@ -47,21 +42,10 @@ public class OcrIndexer implements RequestHandler<S3EventNotification, Object> {
                 String inputObject = s3.getObjectAsString(s3Input.getBucket().getName(), s3Input.getObject().getKey());
                 logger.debug("Got object to index: '{}'", inputObject);
 
-                String updateContent = Strings.toString(jsonBuilder().startObject()
-                        .field("doc_as_upsert", true)
-                        .startObject("doc")
-                        .field("ocrText", inputObject)
-                        .endObject()
-                        .endObject());
                 String documentId = parseDocumentIdFromKey(s3Input.getObject().getKey());
-                Update update = new Update.Builder(updateContent)
-                        .id(documentId)
-                        .index("results")
-                        .type("result")
-                        .build();
-
+                Update updateAction = buildUpsertAction(documentId, new FieldValue("ocrText", inputObject));
                 logger.info("Updating document with ID '{}'", documentId);
-                client.execute(update);
+                client.execute(updateAction);
             }
 
             logger.info("Finished indexing");
@@ -80,15 +64,5 @@ public class OcrIndexer implements RequestHandler<S3EventNotification, Object> {
             throw new IllegalArgumentException("Could not parse document ID from key");
         }
         return matcher.group(1);
-    }
-
-    private JestClient buildJestClient() {
-        AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
-        GetParameterResult ocrEsUrl = ssmClient.getParameter(new GetParameterRequest().withName("ocrEsUrl"));
-        JestClientFactory factory = new JestClientFactory();
-        factory.setHttpClientConfig(new HttpClientConfig
-                .Builder(ocrEsUrl.getParameter().getValue())
-                .build());
-        return factory.getObject();
     }
 }

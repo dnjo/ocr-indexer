@@ -6,6 +6,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.searchbox.client.JestClient;
+import io.searchbox.core.Update;
+import ocrindexer.Jest.FieldValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +18,9 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import static ocrindexer.Jest.buildJestClient;
+import static ocrindexer.Jest.buildUpsertAction;
 
 public class Uploader implements RequestHandler<Map, Object> {
     private static final Logger logger = LoggerFactory.getLogger(Uploader.class);
@@ -41,12 +47,24 @@ public class Uploader implements RequestHandler<Map, Object> {
             logger.info("Image size: {}", decodedBody.length);
             objectMetadata.setContentLength(decodedBody.length);
 
+            LocalDateTime now = LocalDateTime.now();
             String id = UUID.randomUUID().toString();
             AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
             String bucket = System.getenv("S3_BUCKET");
-            String key = formatObjectKey(id);
+            String key = formatObjectKey(id, now);
             logger.info("Uploading image with ID {} to bucket {} with key {}", id, bucket, key);
             s3.putObject(bucket, key, new ByteArrayInputStream(decodedBody), objectMetadata);
+
+            Update updateAction = buildUpsertAction(
+                    id,
+                    new FieldValue("createdAt", now),
+                    new FieldValue("language", contentLanguage),
+                    new FieldValue("type", contentType),
+                    new FieldValue("s3Bucket", bucket),
+                    new FieldValue("s3Key", key));
+            JestClient client = buildJestClient();
+            logger.info("Indexing document with ID {}", id);
+            client.execute(updateAction);
 
             Map<String, String> result = new HashMap<>();
             result.put("id", id);
@@ -59,9 +77,15 @@ public class Uploader implements RequestHandler<Map, Object> {
         }
     }
 
-    private String formatObjectKey(String name) {
-        LocalDateTime now = LocalDateTime.now();
+    private String formatObjectKey(String name, LocalDateTime timestamp) {
         String prefix = System.getenv("S3_PREFIX");
-        return String.format("%s/%d/%d/%d/%d/%s", prefix, now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), name);
+        return String.format(
+                "%s/%d/%d/%d/%d/%s",
+                prefix,
+                timestamp.getYear(),
+                timestamp.getMonthValue(),
+                timestamp.getDayOfMonth(),
+                timestamp.getHour(),
+                name);
     }
 }
