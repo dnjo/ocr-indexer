@@ -11,8 +11,8 @@ import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Update;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import vc.inreach.aws.request.AWSSigner;
@@ -82,12 +82,7 @@ public class Jest {
         JestClientFactory factory = new JestClientFactory() {
             @Override
             protected HttpClientBuilder configureHttpClient(HttpClientBuilder builder) {
-                builder.addInterceptorLast(requestInterceptor);
-                return builder;
-            }
-
-            @Override
-            protected HttpAsyncClientBuilder configureHttpClient(HttpAsyncClientBuilder builder) {
+                builder.setRetryHandler(new DefaultHttpRequestRetryHandler(5, true));
                 builder.addInterceptorLast(requestInterceptor);
                 return builder;
             }
