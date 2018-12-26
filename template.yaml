@@ -69,6 +69,22 @@ Resources:
             Path: /images/{image_id}
             Method: delete
 
+  GetImageBlobFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/ocr-indexer-1.0.jar
+      Handler: net.dnjo.handler.GetImageBlobHandler::handleRequest
+      Runtime: java8
+      MemorySize: 256
+      Timeout: 30
+      Role: arn:aws:iam::334165208394:role/lambda-executor
+      Events:
+        UploadImage:
+          Type: Api
+          Properties:
+            Path: /images/{image_id}/blob
+            Method: get
+
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
