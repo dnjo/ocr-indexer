@@ -46,7 +46,7 @@ Resources:
                   - Name: prefix
                     Value: results/
 
-  UploaderFunction:
+  UploadImageFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/ocr-indexer-1.0.jar
@@ -76,7 +76,7 @@ Resources:
       Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
-        UploadImage:
+        DeleteImage:
           Type: Api
           Properties:
             Path: /images/{image_id}
@@ -92,7 +92,7 @@ Resources:
       Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
-        UploadImage:
+        GetImageBlob:
           Type: Api
           Properties:
             Path: /images/{image_id}/blob
@@ -108,11 +108,27 @@ Resources:
       Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
-        UploadImage:
+        GetImage:
           Type: Api
           Properties:
             Path: /images/{image_id}
             Method: get
+
+  UpdateImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/ocr-indexer-1.0.jar
+      Handler: net.dnjo.handler.UpdateImageHandler::handleRequest
+      Runtime: java8
+      MemorySize: 256
+      Timeout: 30
+      Role: arn:aws:iam::334165208394:role/lambda-executor
+      Events:
+        UpdateImage:
+          Type: Api
+          Properties:
+            Path: /images/{image_id}
+            Method: put
 
   ApiGwAccountConfig:
     Type: "AWS::ApiGateway::Account"
