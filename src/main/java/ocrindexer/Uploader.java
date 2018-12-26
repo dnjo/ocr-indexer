@@ -79,6 +79,7 @@ public class Uploader implements RequestHandler<Map, Object> {
         }
 
         try {
+            result.put("success", success);
             return new GatewayResponse(objectMapper.writeValueAsString(result), headers, success ? 200 : 500);
         } catch (JsonProcessingException e) {
             return new GatewayResponse("Failed to serialize result object", headers, 500);
