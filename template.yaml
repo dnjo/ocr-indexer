@@ -12,7 +12,7 @@ Globals:
 
 Resources:
 
-  OcrIndexerFunction:
+  IndexerFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/ocr-indexer-1.0.jar
