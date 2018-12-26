@@ -16,7 +16,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/ocr-indexer-1.0.jar
-      Handler: ocrindexer.Indexer::handleRequest
+      Handler: net.dnjo.handler.IndexImageOcrResultHandler::handleRequest
       Runtime: java8
       MemorySize: 256
       Timeout: 60
@@ -37,7 +37,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/ocr-indexer-1.0.jar
-      Handler: ocrindexer.Uploader::handleRequest
+      Handler: net.dnjo.handler.UploadImageHandler::handleRequest
       Runtime: java8
       MemorySize: 256
       Timeout: 60
@@ -57,15 +57,11 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/ocr-indexer-1.0.jar
-      Handler: ocrindexer.handler.DeleteImageHandler::handleRequest
+      Handler: net.dnjo.handler.DeleteImageHandler::handleRequest
       Runtime: java8
       MemorySize: 256
-      Timeout: 10
+      Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
-      Environment:
-        Variables:
-          S3_BUCKET: ocr-input.dnjo.net
-          S3_PREFIX: images
       Events:
         UploadImage:
           Type: Api

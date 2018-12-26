@@ -1,4 +1,4 @@
-package ocrindexer;
+package net.dnjo.handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -8,7 +8,8 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.core.Update;
-import ocrindexer.Jest.FieldValue;
+import net.dnjo.GatewayResponse;
+import net.dnjo.Jest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,15 +20,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static ocrindexer.Jest.buildUpsertAction;
-
-public class Uploader implements RequestHandler<Map, Object> {
-    private static final Logger logger = LoggerFactory.getLogger(Uploader.class);
+public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> {
+    private static final Logger logger = LoggerFactory.getLogger(UploadImageHandler.class);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public Object handleRequest(Map input, Context context) {
+    public GatewayResponse handleRequest(Map input, Context context) {
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
@@ -56,13 +55,13 @@ public class Uploader implements RequestHandler<Map, Object> {
             logger.info("Uploading image with ID {} to bucket {} with key {}", id, bucket, key);
             s3.putObject(bucket, key, new ByteArrayInputStream(decodedBody), objectMetadata);
 
-            Update updateAction = buildUpsertAction(
+            Update updateAction = Jest.buildUpsertAction(
                     id,
-                    new FieldValue("createdAt", now),
-                    new FieldValue("language", contentLanguage),
-                    new FieldValue("type", contentType),
-                    new FieldValue("s3Bucket", bucket),
-                    new FieldValue("s3Key", key));
+                    new Jest.FieldValue("createdAt", now),
+                    new Jest.FieldValue("language", contentLanguage),
+                    new Jest.FieldValue("type", contentType),
+                    new Jest.FieldValue("s3Bucket", bucket),
+                    new Jest.FieldValue("s3Key", key));
             logger.info("Indexing document with ID {}", id);
             Jest.CLIENT.execute(updateAction);
 
@@ -70,13 +69,7 @@ public class Uploader implements RequestHandler<Map, Object> {
             result.put("bucket", bucket);
             result.put("key", key);
             success = true;
-        } catch (Exception e) {
-            result.put("requestContext", input.get("requestContext"));
-            result.put("headers", input.get("headers"));
-            logger.error("Got an error while uploading file", e);
-            logger.error("requestContext: {}", input.get("requestContext"));
-            logger.error("headers: {}", input.get("headers"));
-        }
+        } catch (Exception ignored) { }
 
         try {
             result.put("success", success);

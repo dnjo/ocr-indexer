@@ -1,4 +1,4 @@
-package ocrindexer;
+package net.dnjo;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;

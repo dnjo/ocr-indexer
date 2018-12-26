@@ -1,12 +1,15 @@
-package ocrindexer;
+package net.dnjo.handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.event.S3EventNotification;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.core.Update;
-import ocrindexer.Jest.FieldValue;
+import net.dnjo.GatewayResponse;
+import net.dnjo.Jest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,42 +18,43 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static ocrindexer.Jest.buildUpsertAction;
+public class IndexImageOcrResultHandler implements RequestHandler<S3EventNotification, GatewayResponse> {
+    private static final Logger logger = LoggerFactory.getLogger(IndexImageOcrResultHandler.class);
 
-/**
- * Handler for requests to Lambda function.
- */
-public class Indexer implements RequestHandler<S3EventNotification, Object> {
-    private static final Logger logger = LoggerFactory.getLogger(Indexer.class);
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public Object handleRequest(final S3EventNotification input, final Context context) {
+    public GatewayResponse handleRequest(final S3EventNotification input, final Context context) {
         logger.debug("Got S3 data event: '{}'", input);
 
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
+        Map<String, Object> result = new HashMap<>();
+        boolean success = false;
 
         try {
             AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
 
             for (S3EventNotification.S3EventNotificationRecord record : input.getRecords()) {
                 S3EventNotification.S3Entity s3Input = record.getS3();
-                logger.info("Getting object in bucket '{}' with key '{}'", s3Input.getBucket().getName(), s3Input.getObject().getKey());
+                logger.info("Getting object in bucket {} with key {}", s3Input.getBucket().getName(), s3Input.getObject().getKey());
                 String inputObject = s3.getObjectAsString(s3Input.getBucket().getName(), s3Input.getObject().getKey());
-                logger.debug("Got object to index: '{}'", inputObject);
+                logger.debug("Got object to index: {}", inputObject);
 
                 String documentId = parseDocumentIdFromKey(s3Input.getObject().getKey());
-                Update updateAction = buildUpsertAction(documentId, new FieldValue("ocrText", inputObject));
-                logger.info("Updating document with ID '{}'", documentId);
+                Update updateAction = Jest.buildUpsertAction(documentId, new Jest.FieldValue("ocrText", inputObject));
+                logger.info("Updating document with ID {}", documentId);
                 Jest.CLIENT.execute(updateAction);
             }
 
-            logger.info("Finished indexing");
-            String output = "{ \"success\": \"true\" }";
-            return new GatewayResponse(output, headers, 200);
-        } catch (Exception e) {
-            logger.error("Got an error while indexing", e);
-            return new GatewayResponse("{}", headers, 500);
+            success = true;
+        } catch (Exception ignored) { }
+
+        try {
+            result.put("success", success);
+            return new GatewayResponse(objectMapper.writeValueAsString(result), headers, success ? 200 : 500);
+        } catch (JsonProcessingException e) {
+            return new GatewayResponse("Failed to serialize result object", headers, 500);
         }
     }
 
