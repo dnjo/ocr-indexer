@@ -10,6 +10,21 @@ Globals:
       - image~1png
       - image~1jpeg
 
+    MethodSettings: [{
+      # Turn on Info logging
+      "LoggingLevel": "INFO",
+
+      # Enable Metrics
+      "MetricsEnabled": True,
+
+      # Trace-level Logging
+      "DataTraceEnabled": True,
+
+      # On all Paths & methods
+      "ResourcePath": "/*",
+      "HttpMethod": "*",
+    }]
+
 Resources:
 
   IndexerFunction:
@@ -84,6 +99,11 @@ Resources:
           Properties:
             Path: /images/{image_id}/blob
             Method: get
+
+  ApiGwAccountConfig:
+    Type: "AWS::ApiGateway::Account"
+    Properties:
+      CloudWatchRoleArn: arn:aws:iam::334165208394:role/apigateway-logs
 
   Bucket:
     Type: AWS::S3::Bucket
