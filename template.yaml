@@ -6,9 +6,7 @@ Description: >
 Globals:
   Api:
     BinaryMediaTypes:
-      - image~1gif
-      - image~1png
-      - image~1jpeg
+      - image~1*
 
     MethodSettings: [{
       # Turn on Info logging
