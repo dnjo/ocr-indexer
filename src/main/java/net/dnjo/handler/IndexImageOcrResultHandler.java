@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.core.Update;
 import net.dnjo.GatewayResponse;
 import net.dnjo.Jest;
+import net.dnjo.Jest.FieldValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static net.dnjo.Jest.buildUpsertAction;
 
 public class IndexImageOcrResultHandler implements RequestHandler<S3EventNotification, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(IndexImageOcrResultHandler.class);
@@ -42,13 +45,15 @@ public class IndexImageOcrResultHandler implements RequestHandler<S3EventNotific
                 logger.debug("Got object to index: {}", inputObject);
 
                 String documentId = parseDocumentIdFromKey(s3Input.getObject().getKey());
-                Update updateAction = Jest.buildUpsertAction(documentId, new Jest.FieldValue("ocrText", inputObject));
+                Update updateAction = buildUpsertAction(documentId, new FieldValue("ocrText", inputObject));
                 logger.info("Updating document with ID {}", documentId);
                 Jest.CLIENT.execute(updateAction);
             }
 
             success = true;
-        } catch (Exception ignored) { }
+        } catch (Exception e) {
+            logger.error("Got error when indexing OCR result", e);
+        }
 
         try {
             result.put("success", success);

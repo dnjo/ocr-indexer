@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.core.Update;
 import net.dnjo.GatewayResponse;
 import net.dnjo.Jest;
+import net.dnjo.Jest.FieldValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,8 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import static net.dnjo.Jest.buildUpsertAction;
 
 public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(UploadImageHandler.class);
@@ -55,13 +58,13 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
             logger.info("Uploading image with ID {} to bucket {} with key {}", id, bucket, key);
             s3.putObject(bucket, key, new ByteArrayInputStream(decodedBody), objectMetadata);
 
-            Update updateAction = Jest.buildUpsertAction(
+            Update updateAction = buildUpsertAction(
                     id,
-                    new Jest.FieldValue("createdAt", now),
-                    new Jest.FieldValue("language", contentLanguage),
-                    new Jest.FieldValue("type", contentType),
-                    new Jest.FieldValue("s3Bucket", bucket),
-                    new Jest.FieldValue("s3Key", key));
+                    new FieldValue("createdAt", now),
+                    new FieldValue("language", contentLanguage),
+                    new FieldValue("type", contentType),
+                    new FieldValue("s3Bucket", bucket),
+                    new FieldValue("s3Key", key));
             logger.info("Indexing document with ID {}", id);
             Jest.CLIENT.execute(updateAction);
 
@@ -69,7 +72,9 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
             result.put("bucket", bucket);
             result.put("key", key);
             success = true;
-        } catch (Exception ignored) { }
+        } catch (Exception e) {
+            logger.error("Got error when uploading image", e);
+        }
 
         try {
             result.put("success", success);

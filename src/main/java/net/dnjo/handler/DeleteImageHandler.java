@@ -7,11 +7,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.core.Update;
 import net.dnjo.GatewayResponse;
 import net.dnjo.Jest;
+import net.dnjo.Jest.FieldValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static net.dnjo.Jest.buildUpsertAction;
 
 public class DeleteImageHandler implements RequestHandler<Map, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(DeleteImageHandler.class);
@@ -29,11 +32,13 @@ public class DeleteImageHandler implements RequestHandler<Map, GatewayResponse> 
         try {
             Map pathParameters = (Map) input.get("pathParameters");
             String imageId = (String) pathParameters.get("image_id");
-            Update upsertAction = Jest.buildUpsertAction(imageId, new Jest.FieldValue("present", false));
+            Update upsertAction = buildUpsertAction(imageId, new FieldValue("present", false));
             logger.info("Delete image with ID {}", imageId);
             Jest.CLIENT.execute(upsertAction);
             success = true;
-        } catch (Exception ignored) { }
+        } catch (Exception e) {
+            logger.error("Got error when deleting image", e);
+        }
 
         try {
             result.put("success", success);
