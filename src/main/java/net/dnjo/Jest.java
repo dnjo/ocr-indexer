@@ -1,4 +1,4 @@
-package ocrindexer;
+package net.dnjo;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -25,19 +25,19 @@ import java.time.ZoneOffset;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class Jest {
-    static final JestClient CLIENT = buildJestClient();
+    public static final JestClient CLIENT = buildJestClient();
 
-    static class FieldValue {
+    public static class FieldValue {
         private final String name;
         private final Object value;
 
-        FieldValue(String name, Object value) {
+        public FieldValue(String name, Object value) {
             this.name = name;
             this.value = value;
         }
     }
 
-    static Update buildUpsertAction(String documentId, FieldValue... fieldValues) throws IOException {
+    public static Update buildUpsertAction(String documentId, FieldValue... fieldValues) throws IOException {
         XContentBuilder docBuilder = jsonBuilder().startObject()
                 .field("doc_as_upsert", true)
                 .startObject("doc");

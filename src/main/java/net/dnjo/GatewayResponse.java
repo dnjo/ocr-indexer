@@ -1,4 +1,4 @@
-package ocrindexer;
+package net.dnjo;
 
 import java.util.Collections;
 import java.util.HashMap;
