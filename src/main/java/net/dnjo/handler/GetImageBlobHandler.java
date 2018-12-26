@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.util.IOUtils;
 import com.google.gson.JsonObject;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Get;
@@ -13,6 +14,7 @@ import net.dnjo.Jest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,13 +39,11 @@ public class GetImageBlobHandler implements RequestHandler<Map, GatewayResponse>
             logger.info("Getting image object in bucket {} with key {}", bucket, key);
             S3Object imageObject = s3.getObject(bucket, key);
             String contentType = imageObject.getObjectMetadata().getContentType();
-            long contentLength = imageObject.getObjectMetadata().getContentLength();
 
             headers.put("Content-Type", contentType);
             headers.put("X-Custom-Header", contentType);
-            headers.put("Content-Length", Long.toString(contentLength));
-            logger.info("Returning image with content type {} and length {}", contentType, contentLength);
-            return new GatewayResponse(imageObject.getObjectContent(), headers, 200);
+            logger.info("Returning image with content type {}", contentType);
+            return new GatewayResponse(Base64.getEncoder().encodeToString(IOUtils.toByteArray(imageObject.getObjectContent())), headers, 200, true);
         } catch (Exception e) {
             logger.error("Got an error while getting image", e);
             headers.put("Content-Type", "application/json");
