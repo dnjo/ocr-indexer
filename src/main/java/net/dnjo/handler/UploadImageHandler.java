@@ -5,12 +5,11 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.core.Update;
-import net.dnjo.GatewayResponse;
 import net.dnjo.Jest;
 import net.dnjo.Jest.FieldValue;
+import net.dnjo.model.GatewayResponse;
+import net.dnjo.model.JsonGatewayResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,15 +25,11 @@ import static net.dnjo.Jest.buildUpsertAction;
 public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(UploadImageHandler.class);
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public GatewayResponse handleRequest(Map input, Context context) {
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
-        Map<String, Object> result = new HashMap<>();
-        boolean success = false;
 
         try {
             Map inputHeaders = (Map) input.get("headers");
@@ -68,19 +63,14 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
             logger.info("Indexing document with ID {}", id);
             Jest.CLIENT.execute(updateAction);
 
+            Map<String, Object> result = new HashMap<>();
             result.put("id", id);
             result.put("bucket", bucket);
             result.put("key", key);
-            success = true;
+            return new JsonGatewayResponse(result, headers, 200);
         } catch (Exception e) {
             logger.error("Got error when uploading image", e);
-        }
-
-        try {
-            result.put("success", success);
-            return new GatewayResponse(objectMapper.writeValueAsString(result), headers, success ? 200 : 500);
-        } catch (JsonProcessingException e) {
-            return new GatewayResponse("Failed to serialize result object", headers, 500);
+            return new GatewayResponse("{}", headers, 500);
         }
     }
 
