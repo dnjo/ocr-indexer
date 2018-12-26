@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.core.Update;
 import ocrindexer.Jest.FieldValue;
@@ -30,6 +31,8 @@ public class Uploader implements RequestHandler<Map, Object> {
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
+        Map<String, Object> result = new HashMap<>();
+        boolean success = false;
 
         try {
             Map inputHeaders = (Map) input.get("headers");
@@ -63,14 +66,22 @@ public class Uploader implements RequestHandler<Map, Object> {
             logger.info("Indexing document with ID {}", id);
             Jest.CLIENT.execute(updateAction);
 
-            Map<String, String> result = new HashMap<>();
             result.put("id", id);
             result.put("bucket", bucket);
             result.put("key", key);
-            return new GatewayResponse(objectMapper.writeValueAsString(result), headers, 200);
+            success = true;
         } catch (Exception e) {
+            result.put("requestContext", input.get("requestContext"));
+            result.put("headers", input.get("headers"));
             logger.error("Got an error while uploading file", e);
-            return new GatewayResponse("{}", headers, 500);
+            logger.error("requestContext: {}", input.get("requestContext"));
+            logger.error("headers: {}", input.get("headers"));
+        }
+
+        try {
+            return new GatewayResponse(objectMapper.writeValueAsString(result), headers, success ? 200 : 500);
+        } catch (JsonProcessingException e) {
+            return new GatewayResponse("Failed to serialize result object", headers, 500);
         }
     }
 
