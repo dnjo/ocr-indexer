@@ -3,13 +3,20 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   ocr-indexer
 
+Globals:
+  Api:
+    BinaryMediaTypes:
+      - image~1gif
+      - image~1png
+      - image~1jpeg
+
 Resources:
 
   OcrIndexerFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/ocr-indexer-1.0.jar
-      Handler: ocrindexer.App::handleRequest
+      Handler: ocrindexer.Indexer::handleRequest
       Runtime: java8
       MemorySize: 256
       Timeout: 60
@@ -31,6 +38,32 @@ Resources:
                 Rules:
                   - Name: prefix
                     Value: results/
+
+  UploaderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/ocr-indexer-1.0.jar
+      Handler: ocrindexer.Uploader::handleRequest
+      Runtime: java8
+      MemorySize: 256
+      Timeout: 60
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-2ead7f5f
+        SubnetIds:
+          - subnet-5d218607
+          - subnet-824a2fe4
+      Role: arn:aws:iam::334165208394:role/lambda-executor
+      Environment:
+        Variables:
+          S3_BUCKET: ocr-input.dnjo.net
+          S3_PREFIX: images
+      Events:
+        UploadImage:
+          Type: Api
+          Properties:
+            Path: /images
+            Method: post
 
   Bucket:
     Type: AWS::S3::Bucket
