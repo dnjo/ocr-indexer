@@ -9,7 +9,7 @@ import com.amazonaws.util.IOUtils;
 import com.google.gson.JsonObject;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Get;
-import net.dnjo.GatewayResponse;
+import net.dnjo.model.GatewayResponse;
 import net.dnjo.Jest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

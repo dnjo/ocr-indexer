@@ -8,7 +8,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.core.Update;
-import net.dnjo.GatewayResponse;
+import net.dnjo.model.GatewayResponse;
 import net.dnjo.Jest;
 import net.dnjo.Jest.FieldValue;
 import org.slf4j.Logger;

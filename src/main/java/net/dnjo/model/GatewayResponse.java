@@ -1,4 +1,4 @@
-package net.dnjo;
+package net.dnjo.model;
 
 import java.util.Collections;
 import java.util.HashMap;
