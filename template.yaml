@@ -20,12 +20,6 @@ Resources:
       Runtime: java8
       MemorySize: 256
       Timeout: 60
-      VpcConfig:
-        SecurityGroupIds:
-          - sg-2ead7f5f
-        SubnetIds:
-          - subnet-5d218607
-          - subnet-824a2fe4
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
         OcrResults:
@@ -47,12 +41,6 @@ Resources:
       Runtime: java8
       MemorySize: 256
       Timeout: 60
-      VpcConfig:
-        SecurityGroupIds:
-          - sg-2ead7f5f
-        SubnetIds:
-          - subnet-5d218607
-          - subnet-824a2fe4
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Environment:
         Variables:

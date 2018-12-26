@@ -58,6 +58,11 @@
             <artifactId>transport</artifactId>
             <version>6.5.4</version>
         </dependency>
+        <dependency>
+            <groupId>vc.inreach.aws</groupId>
+            <artifactId>aws-signing-request-interceptor</artifactId>
+            <version>0.0.22</version>
+        </dependency>
     </dependencies>
 
     <build>
