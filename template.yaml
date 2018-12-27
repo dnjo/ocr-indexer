@@ -22,6 +22,9 @@ Globals:
       "ResourcePath": "/*",
       "HttpMethod": "*",
     }]
+  Function:
+    Timeout: 30
+    MemorySize: 512
 
 Resources:
 
@@ -31,7 +34,6 @@ Resources:
       CodeUri: target/ocr-indexer-1.0.jar
       Handler: net.dnjo.handler.IndexImageOcrResultHandler::handleRequest
       Runtime: java8
-      MemorySize: 256
       Timeout: 60
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
@@ -52,7 +54,6 @@ Resources:
       CodeUri: target/ocr-indexer-1.0.jar
       Handler: net.dnjo.handler.UploadImageHandler::handleRequest
       Runtime: java8
-      MemorySize: 256
       Timeout: 60
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Environment:
@@ -72,8 +73,6 @@ Resources:
       CodeUri: target/ocr-indexer-1.0.jar
       Handler: net.dnjo.handler.DeleteImageHandler::handleRequest
       Runtime: java8
-      MemorySize: 256
-      Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
         DeleteImage:
@@ -88,8 +87,6 @@ Resources:
       CodeUri: target/ocr-indexer-1.0.jar
       Handler: net.dnjo.handler.GetImageBlobHandler::handleRequest
       Runtime: java8
-      MemorySize: 256
-      Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
         GetImageBlob:
@@ -104,8 +101,6 @@ Resources:
       CodeUri: target/ocr-indexer-1.0.jar
       Handler: net.dnjo.handler.GetImageHandler::handleRequest
       Runtime: java8
-      MemorySize: 256
-      Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
         GetImage:
@@ -120,8 +115,6 @@ Resources:
       CodeUri: target/ocr-indexer-1.0.jar
       Handler: net.dnjo.handler.UpdateImageHandler::handleRequest
       Runtime: java8
-      MemorySize: 256
-      Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
         UpdateImage:
@@ -136,8 +129,6 @@ Resources:
       CodeUri: target/ocr-indexer-1.0.jar
       Handler: net.dnjo.handler.SearchQueryHandler::handleRequest
       Runtime: java8
-      MemorySize: 256
-      Timeout: 30
       Role: arn:aws:iam::334165208394:role/lambda-executor
       Events:
         SearchQuery:
