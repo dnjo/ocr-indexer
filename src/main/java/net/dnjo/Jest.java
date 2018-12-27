@@ -15,6 +15,8 @@ import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import vc.inreach.aws.request.AWSSigner;
 import vc.inreach.aws.request.AWSSigningRequestInterceptor;
 
@@ -25,6 +27,32 @@ import java.time.ZoneOffset;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class Jest {
+    private static final Logger logger = LoggerFactory.getLogger(Jest.class);
+    private static final AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
+    private static final AWSCredentialsProvider esCredentialsProvider = new AWSCredentialsProvider() {
+        @Override
+        public AWSCredentials getCredentials() {
+            return new AWSCredentials() {
+                @Override
+                public String getAWSAccessKeyId() {
+                    logger.info("Getting Elasticsearch IAM access key");
+                    return ssmClient.getParameter(new GetParameterRequest().withName("ocrEsAccessKey")).getParameter().getValue();
+                }
+
+                @Override
+                public String getAWSSecretKey() {
+                    logger.info("Getting Elasticsearch IAM secret key");
+                    return ssmClient.getParameter(new GetParameterRequest().withName("ocrEsSecretKey")).getParameter().getValue();
+                }
+            };
+        }
+
+        @Override
+        public void refresh() {
+
+        }
+    };
+
     public static final JestClient CLIENT = buildJestClient();
 
     public static class FieldValue {
@@ -53,31 +81,11 @@ public class Jest {
     }
 
     private static JestClient buildJestClient() {
-        final AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
+        logger.info("Configuring Jest client");
+        logger.info("Getting Elasticsearch URL parameter");
         final GetParameterResult ocrEsUrl = ssmClient.getParameter(new GetParameterRequest().withName("ocrEsUrl"));
         final Supplier<LocalDateTime> clock = () -> LocalDateTime.now(ZoneOffset.UTC);
-        final AWSSigner awsSigner = new AWSSigner(new AWSCredentialsProvider() {
-            @Override
-            public AWSCredentials getCredentials() {
-                return new AWSCredentials() {
-                    @Override
-                    public String getAWSAccessKeyId() {
-                        return ssmClient.getParameter(new GetParameterRequest().withName("ocrEsAccessKey")).getParameter().getValue();
-                    }
-
-                    @Override
-                    public String getAWSSecretKey() {
-                        return ssmClient.getParameter(new GetParameterRequest().withName("ocrEsSecretKey")).getParameter().getValue();
-                    }
-                };
-            }
-
-            @Override
-            public void refresh() {
-
-            }
-        }, System.getenv("AWS_REGION"), "es", clock);
-
+        final AWSSigner awsSigner = new AWSSigner(esCredentialsProvider, System.getenv("AWS_REGION"), "es", clock);
         final AWSSigningRequestInterceptor requestInterceptor = new AWSSigningRequestInterceptor(awsSigner);
         final JestClientFactory factory = new JestClientFactory() {
             @Override
@@ -90,6 +98,9 @@ public class Jest {
         factory.setHttpClientConfig(new HttpClientConfig
                 .Builder(ocrEsUrl.getParameter().getValue())
                 .build());
-        return factory.getObject();
+        logger.info("Building Jest client");
+        final JestClient client = factory.getObject();
+        logger.info("Returning Jest client");
+        return client;
     }
 }
