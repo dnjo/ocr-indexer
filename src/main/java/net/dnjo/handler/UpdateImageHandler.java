@@ -21,19 +21,19 @@ public class UpdateImageHandler implements RequestHandler<Map, GatewayResponse> 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public GatewayResponse handleRequest(Map input, Context context) {
-        Map<String, String> headers = new HashMap<>();
+    public GatewayResponse handleRequest(final Map input, final Context context) {
+        final Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
 
         try {
-            Map pathParameters = (Map) input.get("pathParameters");
-            String imageId = (String) pathParameters.get("image_id");
-            Map body = objectMapper.readValue((String) input.get("body"), HashMap.class);
-            String text = (String) body.get("text");
-            String ocrText = (String) body.get("ocrText");
+            final Map pathParameters = (Map) input.get("pathParameters");
+            final String imageId = (String) pathParameters.get("image_id");
+            final Map body = objectMapper.readValue((String) input.get("body"), HashMap.class);
+            final String text = (String) body.get("text");
+            final String ocrText = (String) body.get("ocrText");
             logger.info("Updating image with ID {}", imageId);
-            Image image = imageDao.updateImage(imageId, new ImageUpdate(text, ocrText));
+            final Image image = imageDao.updateImage(imageId, new ImageUpdate(text, ocrText));
             return new JsonGatewayResponse(image, headers, 200);
         } catch (Exception e) {
             logger.error("Got an error while updating image", e);

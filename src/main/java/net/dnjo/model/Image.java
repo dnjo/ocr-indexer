@@ -10,7 +10,7 @@ public class Image {
     private final String ocrText;
     private final String type;
 
-    public Image(String id, LocalDateTime createdAt, LocalDateTime updatedAt, String text, String ocrText, String type) {
+    public Image(final String id, final LocalDateTime createdAt, final LocalDateTime updatedAt, final String text, final String ocrText, final String type) {
         this.id = id;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;

@@ -26,26 +26,26 @@ public class IndexImageOcrResultHandler implements RequestHandler<S3EventNotific
     public GatewayResponse handleRequest(final S3EventNotification input, final Context context) {
         logger.debug("Got S3 data event: '{}'", input);
 
-        Map<String, String> headers = new HashMap<>();
+        final Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
 
         try {
-            AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
+            final AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
 
-            for (S3EventNotification.S3EventNotificationRecord record : input.getRecords()) {
-                S3EventNotification.S3Entity s3Input = record.getS3();
+            for (final S3EventNotification.S3EventNotificationRecord record : input.getRecords()) {
+                final S3EventNotification.S3Entity s3Input = record.getS3();
                 logger.info("Getting object in bucket {} with key {}", s3Input.getBucket().getName(), s3Input.getObject().getKey());
-                String inputObject = s3.getObjectAsString(s3Input.getBucket().getName(), s3Input.getObject().getKey());
+                final String inputObject = s3.getObjectAsString(s3Input.getBucket().getName(), s3Input.getObject().getKey());
                 logger.debug("Got object to index: {}", inputObject);
 
-                String documentId = parseDocumentIdFromKey(s3Input.getObject().getKey());
-                Update updateAction = buildUpsertAction(documentId, new FieldValue("ocrText", inputObject));
+                final String documentId = parseDocumentIdFromKey(s3Input.getObject().getKey());
+                final Update updateAction = buildUpsertAction(documentId, new FieldValue("ocrText", inputObject));
                 logger.info("Updating document with ID {}", documentId);
                 Jest.CLIENT.execute(updateAction);
             }
 
-            Map<String, Object> result = new HashMap<>();
+            final Map<String, Object> result = new HashMap<>();
             result.put("success", true);
             return new JsonGatewayResponse(result, headers, 200);
         } catch (Exception e) {
@@ -54,9 +54,9 @@ public class IndexImageOcrResultHandler implements RequestHandler<S3EventNotific
         }
     }
 
-    private String parseDocumentIdFromKey(String key) {
-        Pattern pattern = Pattern.compile("([^/]+)$");
-        Matcher matcher = pattern.matcher(key);
+    private String parseDocumentIdFromKey(final String key) {
+        final Pattern pattern = Pattern.compile("([^/]+)$");
+        final Matcher matcher = pattern.matcher(key);
         if (!matcher.find()) {
             throw new IllegalArgumentException("Could not parse document ID from key");
         }

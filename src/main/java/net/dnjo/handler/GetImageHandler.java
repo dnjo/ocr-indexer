@@ -18,16 +18,16 @@ public class GetImageHandler implements RequestHandler<Map, GatewayResponse> {
     private final ImageDao imageDao = new ImageDao();
 
     @Override
-    public GatewayResponse handleRequest(Map input, Context context) {
-        Map<String, String> headers = new HashMap<>();
+    public GatewayResponse handleRequest(final Map input, final Context context) {
+        final Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
 
         try {
-            Map pathParameters = (Map) input.get("pathParameters");
-            String imageId = (String) pathParameters.get("image_id");
+            final Map pathParameters = (Map) input.get("pathParameters");
+            final String imageId = (String) pathParameters.get("image_id");
             logger.info("Getting image document with ID {}", imageId);
-            Image image = imageDao.findImage(imageId);
+            final Image image = imageDao.findImage(imageId);
             return new JsonGatewayResponse(image, headers, 200);
         } catch (Exception e) {
             logger.error("Got an error while getting image document", e);

@@ -22,28 +22,29 @@ public class GetImageBlobHandler implements RequestHandler<Map, GatewayResponse>
     private static final Logger logger = LoggerFactory.getLogger(GetImageBlobHandler.class);
 
     @Override
-    public GatewayResponse handleRequest(Map input, Context context) {
-        Map<String, String> headers = new HashMap<>();
+    public GatewayResponse handleRequest(final Map input, final Context context) {
+        final Map<String, String> headers = new HashMap<>();
 
         try {
-            Map pathParameters = (Map) input.get("pathParameters");
-            String imageId = (String) pathParameters.get("image_id");
-            Get getAction = new Get.Builder("results", imageId).build();
+            final Map pathParameters = (Map) input.get("pathParameters");
+            final String imageId = (String) pathParameters.get("image_id");
+            final Get getAction = new Get.Builder("results", imageId).build();
             logger.info("Getting image document with ID {}", imageId);
-            DocumentResult imageDocument = Jest.CLIENT.execute(getAction);
-            JsonObject imageJson = imageDocument.getJsonObject().getAsJsonObject("_source");
-            String bucket = imageJson.get("s3Bucket").getAsString();
-            String key = imageJson.get("s3Key").getAsString();
+            final DocumentResult imageDocument = Jest.CLIENT.execute(getAction);
+            final JsonObject imageJson = imageDocument.getJsonObject().getAsJsonObject("_source");
+            final String bucket = imageJson.get("s3Bucket").getAsString();
+            final String key = imageJson.get("s3Key").getAsString();
 
-            AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
+            final AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
             logger.info("Getting image object in bucket {} with key {}", bucket, key);
-            S3Object imageObject = s3.getObject(bucket, key);
-            String contentType = imageObject.getObjectMetadata().getContentType();
+            final S3Object imageObject = s3.getObject(bucket, key);
+            final String contentType = imageObject.getObjectMetadata().getContentType();
 
             headers.put("Content-Type", contentType);
             headers.put("X-Custom-Header", contentType);
             logger.info("Returning image with content type {}", contentType);
-            return new GatewayResponse(Base64.getEncoder().encodeToString(IOUtils.toByteArray(imageObject.getObjectContent())), headers, 200, true);
+            final String base64Image = Base64.getEncoder().encodeToString(IOUtils.toByteArray(imageObject.getObjectContent()));
+            return new GatewayResponse(base64Image, headers, 200, true);
         } catch (Exception e) {
             logger.error("Got an error while getting image", e);
             headers.put("Content-Type", "application/json");

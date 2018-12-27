@@ -19,18 +19,18 @@ public class DeleteImageHandler implements RequestHandler<Map, GatewayResponse> 
     private static final Logger logger = LoggerFactory.getLogger(DeleteImageHandler.class);
 
     @Override
-    public GatewayResponse handleRequest(Map input, Context context) {
-        Map<String, String> headers = new HashMap<>();
+    public GatewayResponse handleRequest(final Map input, final Context context) {
+        final Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
 
         try {
-            Map pathParameters = (Map) input.get("pathParameters");
-            String imageId = (String) pathParameters.get("image_id");
-            Update upsertAction = buildUpsertAction(imageId, new FieldValue("present", false));
+            final Map pathParameters = (Map) input.get("pathParameters");
+            final String imageId = (String) pathParameters.get("image_id");
+            final Update upsertAction = buildUpsertAction(imageId, new FieldValue("present", false));
             logger.info("Delete image with ID {}", imageId);
             Jest.CLIENT.execute(upsertAction);
-            Map<String, Object> result = new HashMap<>();
+            final Map<String, Object> result = new HashMap<>();
             result.put("success", true);
             return new JsonGatewayResponse(result, headers, 200);
         } catch (Exception e) {
