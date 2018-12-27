@@ -17,10 +17,10 @@ import java.util.function.Function;
 import static net.dnjo.Jest.buildUpsertAction;
 
 public class ImageDao {
-    public Image findImage(String imageId) throws IOException {
-        Get getAction = new Get.Builder("results", imageId).build();
-        DocumentResult imageDocument = Jest.CLIENT.execute(getAction);
-        JsonObject imageJson = imageDocument.getJsonObject().getAsJsonObject("_source");
+    public Image findImage(final String imageId) throws IOException {
+        final Get getAction = new Get.Builder("results", imageId).build();
+        final DocumentResult imageDocument = Jest.CLIENT.execute(getAction);
+        final JsonObject imageJson = imageDocument.getJsonObject().getAsJsonObject("_source");
         return new Image(
                 imageId,
                 LocalDateTime.parse(imageJson.get("createdAt").getAsString()),
@@ -30,20 +30,20 @@ public class ImageDao {
                 imageJson.get("type").getAsString());
     }
 
-    public Image updateImage(String imageId, ImageUpdate imageUpdate) throws IOException {
-        LocalDateTime now = LocalDateTime.now();
-        Update update = buildUpsertAction(
+    public Image updateImage(final String imageId, final ImageUpdate imageUpdate) throws IOException {
+        final LocalDateTime now = LocalDateTime.now();
+        final Update update = buildUpsertAction(
                 imageId,
                 new FieldValue("text", imageUpdate.getText()),
                 new FieldValue("ocrText", imageUpdate.getOcrText()),
                 new FieldValue("updatedAt", now));
         Jest.CLIENT.execute(update);
-        Image image = findImage(imageId);
+        final Image image = findImage(imageId);
         return new Image(imageId, image.getCreatedAt(), now, imageUpdate.getText(), imageUpdate.getOcrText(), image.getType());
     }
 
-    private <T> T getJsonValue(JsonObject object, String memberName, Function<JsonElement, T> elementValueProvider) {
-        JsonElement element = object.get(memberName);
+    private <T> T getJsonValue(final JsonObject object, final String memberName, final Function<JsonElement, T> elementValueProvider) {
+        final JsonElement element = object.get(memberName);
         return element != null && !element.isJsonNull() ? elementValueProvider.apply(element) : null;
     }
 }

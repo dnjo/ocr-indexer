@@ -12,7 +12,7 @@ public class JsonGatewayResponse extends GatewayResponse {
             .registerModule(new JavaTimeModule())
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
-    public JsonGatewayResponse(Object body, Map<String, String> headers, int statusCode) throws JsonProcessingException {
+    public JsonGatewayResponse(final Object body, final Map<String, String> headers, final int statusCode) throws JsonProcessingException {
         super(objectMapper.writeValueAsString(body), headers, statusCode);
     }
 }

@@ -31,20 +31,20 @@ public class Jest {
         private final String name;
         private final Object value;
 
-        public FieldValue(String name, Object value) {
+        public FieldValue(final String name, final Object value) {
             this.name = name;
             this.value = value;
         }
     }
 
-    public static Update buildUpsertAction(String documentId, FieldValue... fieldValues) throws IOException {
-        XContentBuilder docBuilder = jsonBuilder().startObject()
+    public static Update buildUpsertAction(final String documentId, final FieldValue... fieldValues) throws IOException {
+        final XContentBuilder docBuilder = jsonBuilder().startObject()
                 .field("doc_as_upsert", true)
                 .startObject("doc");
-        for (FieldValue field : fieldValues) {
+        for (final FieldValue field : fieldValues) {
             docBuilder.field(field.name, field.value);
         }
-        String updateContent = Strings.toString(docBuilder.endObject().endObject());
+        final String updateContent = Strings.toString(docBuilder.endObject().endObject());
         return new Update.Builder(updateContent)
                 .id(documentId)
                 .index("results")
@@ -53,8 +53,8 @@ public class Jest {
     }
 
     private static JestClient buildJestClient() {
-        AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
-        GetParameterResult ocrEsUrl = ssmClient.getParameter(new GetParameterRequest().withName("ocrEsUrl"));
+        final AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
+        final GetParameterResult ocrEsUrl = ssmClient.getParameter(new GetParameterRequest().withName("ocrEsUrl"));
         final Supplier<LocalDateTime> clock = () -> LocalDateTime.now(ZoneOffset.UTC);
         final AWSSigner awsSigner = new AWSSigner(new AWSCredentialsProvider() {
             @Override
@@ -78,10 +78,10 @@ public class Jest {
             }
         }, System.getenv("AWS_REGION"), "es", clock);
 
-        AWSSigningRequestInterceptor requestInterceptor = new AWSSigningRequestInterceptor(awsSigner);
-        JestClientFactory factory = new JestClientFactory() {
+        final AWSSigningRequestInterceptor requestInterceptor = new AWSSigningRequestInterceptor(awsSigner);
+        final JestClientFactory factory = new JestClientFactory() {
             @Override
-            protected HttpClientBuilder configureHttpClient(HttpClientBuilder builder) {
+            protected HttpClientBuilder configureHttpClient(final HttpClientBuilder builder) {
                 builder.setRetryHandler(new DefaultHttpRequestRetryHandler(5, true));
                 builder.addInterceptorLast(requestInterceptor);
                 return builder;

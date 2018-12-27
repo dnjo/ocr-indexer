@@ -26,34 +26,34 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
     private static final Logger logger = LoggerFactory.getLogger(UploadImageHandler.class);
 
     @Override
-    public GatewayResponse handleRequest(Map input, Context context) {
-        Map<String, String> headers = new HashMap<>();
+    public GatewayResponse handleRequest(final Map input, final Context context) {
+        final Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
 
         try {
-            Map inputHeaders = (Map) input.get("headers");
-            String contentType = (String) inputHeaders.get("Content-Type");
-            String contentLanguage = (String) inputHeaders.get("Content-Language");
+            final Map inputHeaders = (Map) input.get("headers");
+            final String contentType = (String) inputHeaders.get("Content-Type");
+            final String contentLanguage = (String) inputHeaders.get("Content-Language");
             logger.info("Image content type: {}", contentType);
             logger.info("Image language: {}", contentLanguage);
-            ObjectMetadata objectMetadata = new ObjectMetadata();
+            final ObjectMetadata objectMetadata = new ObjectMetadata();
             objectMetadata.setContentType(contentType);
             objectMetadata.setContentLanguage(contentLanguage);
 
-            byte[] decodedBody = Base64.getDecoder().decode((String) input.get("body"));
+            final byte[] decodedBody = Base64.getDecoder().decode((String) input.get("body"));
             logger.info("Image size: {}", decodedBody.length);
             objectMetadata.setContentLength(decodedBody.length);
 
-            LocalDateTime now = LocalDateTime.now();
-            String id = UUID.randomUUID().toString();
-            AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
-            String bucket = System.getenv("S3_BUCKET");
-            String key = formatObjectKey(id, now);
+            final LocalDateTime now = LocalDateTime.now();
+            final String id = UUID.randomUUID().toString();
+            final AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
+            final String bucket = System.getenv("S3_BUCKET");
+            final String key = formatObjectKey(id, now);
             logger.info("Uploading image with ID {} to bucket {} with key {}", id, bucket, key);
             s3.putObject(bucket, key, new ByteArrayInputStream(decodedBody), objectMetadata);
 
-            Update updateAction = buildUpsertAction(
+            final Update updateAction = buildUpsertAction(
                     id,
                     new FieldValue("createdAt", now),
                     new FieldValue("language", contentLanguage),
@@ -63,7 +63,7 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
             logger.info("Indexing document with ID {}", id);
             Jest.CLIENT.execute(updateAction);
 
-            Map<String, Object> result = new HashMap<>();
+            final Map<String, Object> result = new HashMap<>();
             result.put("id", id);
             result.put("bucket", bucket);
             result.put("key", key);
@@ -74,8 +74,8 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
         }
     }
 
-    private String formatObjectKey(String name, LocalDateTime timestamp) {
-        String prefix = System.getenv("S3_PREFIX");
+    private String formatObjectKey(final String name, final LocalDateTime timestamp) {
+        final String prefix = System.getenv("S3_PREFIX");
         return String.format(
                 "%s/%d/%d/%d/%d/%s",
                 prefix,
