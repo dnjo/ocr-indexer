@@ -22,6 +22,10 @@ Globals:
       "ResourcePath": "/*",
       "HttpMethod": "*",
     }]
+    Cors:
+      AllowMethods: "'*'"
+      AllowHeaders: "'*'"
+      AllowOrigin: "'*'"
   Function:
     Timeout: 30
     MemorySize: 512
