@@ -138,7 +138,7 @@ Resources:
         SearchQuery:
           Type: Api
           Properties:
-            Path: /search
+            Path: /search/{indices}/{method}
             Method: post
 
   ApiGwAccountConfig:

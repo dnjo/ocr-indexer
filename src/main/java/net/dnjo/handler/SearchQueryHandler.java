@@ -2,9 +2,9 @@ package net.dnjo.handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import io.searchbox.core.Search;
-import io.searchbox.core.SearchResult;
+import io.searchbox.client.JestResult;
 import net.dnjo.Jest;
+import net.dnjo.RawSearch;
 import net.dnjo.model.GatewayResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +22,13 @@ public class SearchQueryHandler implements RequestHandler<Map, GatewayResponse> 
         headers.put("X-Custom-Header", "application/json");
 
         try {
-            final Search searchAction = new Search.Builder((String) input.get("body"))
-                    .addIndex("results")
-                    .build();
+            final Map pathParameters = (Map) input.get("pathParameters");
+            final String method = (String) pathParameters.get("method");
+            final String indices = (String) pathParameters.get("indices");
+            logger.info("Building search queries for index/indices {}", indices);
+            final RawSearch search = new RawSearch(method, "POST", (String) input.get("body"), indices);
             logger.info("Running query");
-            final SearchResult result = Jest.CLIENT.execute(searchAction);
+            final JestResult result = Jest.CLIENT.execute(search);
             return new GatewayResponse(result.getJsonString(), headers, 200);
         } catch (Exception e) {
             logger.error("Got error while running query", e);
