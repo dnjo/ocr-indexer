@@ -19,11 +19,47 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static net.dnjo.Jest.buildUpsertAction;
+import static net.dnjo.MapUtils.buildCaseInsensitiveMap;
 
 public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(UploadImageHandler.class);
+
+    private static class BodyDecoder {
+        private final String contentType;
+        private final byte[] decodedBody;
+
+        private BodyDecoder(final Map headers, final String body) {
+            final String requestContentType = (String) headers.get("Content-Type");
+            final String encodedText;
+            if (requestContentType.equals("application/json")) {
+                final String[] bodyParts = body.split(",");
+                final String contentMetadata = bodyParts[0];
+                contentType = parseContentType(contentMetadata);
+                encodedText = bodyParts[1];
+            } else {
+                contentType = requestContentType;
+                encodedText = body;
+            }
+            decodedBody = decodeBody(encodedText);
+        }
+
+        private String parseContentType(final String contentMetadata) {
+            final Pattern pattern = Pattern.compile("data:(.+);");
+            final Matcher matcher = pattern.matcher(contentMetadata);
+            if (!matcher.find()) {
+                throw new IllegalArgumentException("Could not parse content type from string " + contentMetadata);
+            }
+            return matcher.group(1);
+        }
+
+        private byte[] decodeBody(final String body) {
+            return Base64.getMimeDecoder().decode(body);
+        }
+    }
 
     @Override
     public GatewayResponse handleRequest(final Map input, final Context context) {
@@ -32,18 +68,18 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
         headers.put("X-Custom-Header", "application/json");
 
         try {
-            final Map inputHeaders = (Map) input.get("headers");
-            final String contentType = (String) inputHeaders.get("Content-Type");
+            final Map inputHeaders = buildCaseInsensitiveMap((Map) input.get("headers"));
+            logger.info("Input headers: {}", inputHeaders);
+            final BodyDecoder bodyDecoder = new BodyDecoder(inputHeaders, (String) input.get("body"));
             final String contentLanguage = (String) inputHeaders.get("Content-Language");
-            logger.info("Image content type: {}", contentType);
+            logger.info("Image content type: {}", bodyDecoder.contentType);
             logger.info("Image language: {}", contentLanguage);
             final ObjectMetadata objectMetadata = new ObjectMetadata();
-            objectMetadata.setContentType(contentType);
+            objectMetadata.setContentType(bodyDecoder.contentType);
             objectMetadata.setContentLanguage(contentLanguage);
 
-            final byte[] decodedBody = Base64.getDecoder().decode((String) input.get("body"));
-            logger.info("Image size: {}", decodedBody.length);
-            objectMetadata.setContentLength(decodedBody.length);
+            logger.info("Image size: {}", bodyDecoder.decodedBody.length);
+            objectMetadata.setContentLength(bodyDecoder.decodedBody.length);
 
             final LocalDateTime now = LocalDateTime.now();
             final String id = UUID.randomUUID().toString();
@@ -51,13 +87,13 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
             final String bucket = System.getenv("S3_BUCKET");
             final String key = formatObjectKey(id, now);
             logger.info("Uploading image with ID {} to bucket {} with key {}", id, bucket, key);
-            s3.putObject(bucket, key, new ByteArrayInputStream(decodedBody), objectMetadata);
+            s3.putObject(bucket, key, new ByteArrayInputStream(bodyDecoder.decodedBody), objectMetadata);
 
             final Update updateAction = buildUpsertAction(
                     id,
                     new FieldValue("createdAt", now),
                     new FieldValue("language", contentLanguage),
-                    new FieldValue("type", contentType),
+                    new FieldValue("type", bodyDecoder.contentType),
                     new FieldValue("s3Bucket", bucket),
                     new FieldValue("s3Key", key));
             logger.info("Indexing document with ID {}", id);
