@@ -32,6 +32,16 @@ Globals:
 
 Resources:
 
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: OcrIndexer
+      StageName: prod
+      Auth:
+        Authorizers:
+          CognitoDocrAuth:
+            UserPoolArn: arn:aws:cognito-idp:eu-west-1:334165208394:userpool/eu-west-1_dFwgp2TaX
+
   IndexerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -70,6 +80,10 @@ Resources:
           Properties:
             Path: /images
             Method: post
+            RestApiId:
+              Ref: Api
+            Auth:
+              Authorizer: CognitoDocrAuth
 
   DeleteImageFunction:
     Type: AWS::Serverless::Function
@@ -84,6 +98,10 @@ Resources:
           Properties:
             Path: /images/{image_id}
             Method: delete
+            RestApiId:
+              Ref: Api
+            Auth:
+              Authorizer: CognitoDocrAuth
 
   GetImageBlobFunction:
     Type: AWS::Serverless::Function
@@ -98,6 +116,8 @@ Resources:
           Properties:
             Path: /images/{image_id}/blob
             Method: get
+            RestApiId:
+              Ref: Api
 
   GetImageFunction:
     Type: AWS::Serverless::Function
@@ -112,6 +132,10 @@ Resources:
           Properties:
             Path: /images/{image_id}
             Method: get
+            RestApiId:
+              Ref: Api
+            Auth:
+              Authorizer: CognitoDocrAuth
 
   UpdateImageFunction:
     Type: AWS::Serverless::Function
@@ -126,6 +150,10 @@ Resources:
           Properties:
             Path: /images/{image_id}
             Method: put
+            RestApiId:
+              Ref: Api
+            Auth:
+              Authorizer: CognitoDocrAuth
 
   SearchQueryFunction:
     Type: AWS::Serverless::Function
@@ -140,6 +168,10 @@ Resources:
           Properties:
             Path: /search/{indices}/{method}
             Method: post
+            RestApiId:
+              Ref: Api
+            Auth:
+              Authorizer: CognitoDocrAuth
 
   ApiGwAccountConfig:
     Type: "AWS::ApiGateway::Account"
