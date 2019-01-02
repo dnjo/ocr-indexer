@@ -17,8 +17,8 @@ import java.util.function.Function;
 import static net.dnjo.Jest.buildUpsertAction;
 
 public class ImageDao {
-    public Image findImage(final String imageId) throws IOException {
-        final Get getAction = new Get.Builder("results", imageId).build();
+    public Image findImage(final String imageId, final String userId) throws IOException {
+        final Get getAction = Jest.buildGetAction(imageId, userId);
         final DocumentResult imageDocument = Jest.CLIENT.execute(getAction);
         final JsonObject imageJson = imageDocument.getJsonObject().getAsJsonObject("_source");
         return new Image(
@@ -30,15 +30,16 @@ public class ImageDao {
                 imageJson.get("type").getAsString());
     }
 
-    public Image updateImage(final String imageId, final ImageUpdate imageUpdate) throws IOException {
+    public Image updateImage(final String imageId, final String userId, final ImageUpdate imageUpdate) throws IOException {
         final LocalDateTime now = LocalDateTime.now();
         final Update update = buildUpsertAction(
                 imageId,
+                userId,
                 new FieldValue("text", imageUpdate.getText()),
                 new FieldValue("ocrText", imageUpdate.getOcrText()),
                 new FieldValue("updatedAt", now));
         Jest.CLIENT.execute(update);
-        final Image image = findImage(imageId);
+        final Image image = findImage(imageId, userId);
         return new Image(imageId, image.getCreatedAt(), now, imageUpdate.getText(), imageUpdate.getOcrText(), image.getType());
     }
 

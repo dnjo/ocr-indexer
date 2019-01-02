@@ -6,11 +6,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.util.IOUtils;
-import com.google.gson.JsonObject;
-import io.searchbox.core.DocumentResult;
-import io.searchbox.core.Get;
-import net.dnjo.model.GatewayResponse;
 import net.dnjo.Jest;
+import net.dnjo.model.GatewayResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +25,11 @@ public class GetImageBlobHandler implements RequestHandler<Map, GatewayResponse>
         try {
             final Map pathParameters = (Map) input.get("pathParameters");
             final String imageId = (String) pathParameters.get("image_id");
-            final Get getAction = new Get.Builder("results", imageId).build();
             logger.info("Getting image document with ID {}", imageId);
-            final DocumentResult imageDocument = Jest.CLIENT.execute(getAction);
-            final JsonObject imageJson = imageDocument.getJsonObject().getAsJsonObject("_source");
-            final String bucket = imageJson.get("s3Bucket").getAsString();
-            final String key = imageJson.get("s3Key").getAsString();
+            final Map documentSource = Jest.findById(imageId);
+            logger.info("Source: {}", documentSource);
+            final String bucket = (String) documentSource.get("s3Bucket");
+            final String key = (String) documentSource.get("s3Key");
 
             final AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
             logger.info("Getting image object in bucket {} with key {}", bucket, key);

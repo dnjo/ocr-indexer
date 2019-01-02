@@ -23,6 +23,21 @@ import static net.dnjo.Jest.buildUpsertAction;
 public class IndexImageOcrResultHandler implements RequestHandler<S3EventNotification, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(IndexImageOcrResultHandler.class);
 
+    private static class KeyParser {
+        private final String userId;
+        private final String documentId;
+
+        private KeyParser(final String key) {
+            final Pattern pattern = Pattern.compile("user-([^/]+).+?([^/]+)$");
+            final Matcher matcher = pattern.matcher(key);
+            if (!matcher.find()) {
+                throw new IllegalArgumentException("Could not parse document ID from key");
+            }
+            userId = matcher.group(1);
+            documentId = matcher.group(2);
+        }
+    }
+
     public GatewayResponse handleRequest(final S3EventNotification input, final Context context) {
         logger.debug("Got S3 data event: '{}'", input);
 
@@ -39,9 +54,9 @@ public class IndexImageOcrResultHandler implements RequestHandler<S3EventNotific
                 final String inputObject = s3.getObjectAsString(s3Input.getBucket().getName(), s3Input.getObject().getKey());
                 logger.debug("Got object to index: {}", inputObject);
 
-                final String documentId = parseDocumentIdFromKey(s3Input.getObject().getKey());
-                final Update updateAction = buildUpsertAction(documentId, new FieldValue("ocrText", inputObject));
-                logger.info("Updating document with ID {}", documentId);
+                final KeyParser keyParser = new KeyParser(s3Input.getObject().getKey());
+                final Update updateAction = buildUpsertAction(keyParser.documentId, keyParser.userId, new FieldValue("ocrText", inputObject));
+                logger.info("Updating document with ID {}", keyParser.documentId);
                 Jest.CLIENT.execute(updateAction);
             }
 
@@ -52,14 +67,5 @@ public class IndexImageOcrResultHandler implements RequestHandler<S3EventNotific
             logger.error("Got error when indexing OCR result", e);
             return new GatewayResponse("{}", headers, 500);
         }
-    }
-
-    private String parseDocumentIdFromKey(final String key) {
-        final Pattern pattern = Pattern.compile("([^/]+)$");
-        final Matcher matcher = pattern.matcher(key);
-        if (!matcher.find()) {
-            throw new IllegalArgumentException("Could not parse document ID from key");
-        }
-        return matcher.group(1);
     }
 }

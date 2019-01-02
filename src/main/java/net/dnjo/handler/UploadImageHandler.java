@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static net.dnjo.AuthorizationUtils.parseSubjectFromJwt;
 import static net.dnjo.Jest.buildUpsertAction;
 import static net.dnjo.MapUtils.buildCaseInsensitiveMap;
 
@@ -69,6 +70,7 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
 
         try {
             final Map inputHeaders = buildCaseInsensitiveMap((Map) input.get("headers"));
+            final String userId = parseSubjectFromJwt(inputHeaders);
             logger.info("Input headers: {}", inputHeaders);
             final BodyDecoder bodyDecoder = new BodyDecoder(inputHeaders, (String) input.get("body"));
             final String contentLanguage = (String) inputHeaders.get("Content-Language");
@@ -85,12 +87,13 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
             final String id = UUID.randomUUID().toString();
             final AmazonS3 s3 = AmazonS3ClientBuilder.defaultClient();
             final String bucket = System.getenv("S3_BUCKET");
-            final String key = formatObjectKey(id, now);
+            final String key = formatObjectKey(id, userId, now);
             logger.info("Uploading image with ID {} to bucket {} with key {}", id, bucket, key);
             s3.putObject(bucket, key, new ByteArrayInputStream(bodyDecoder.decodedBody), objectMetadata);
 
             final Update updateAction = buildUpsertAction(
                     id,
+                    userId,
                     new FieldValue("createdAt", now),
                     new FieldValue("language", contentLanguage),
                     new FieldValue("type", bodyDecoder.contentType),
@@ -110,11 +113,12 @@ public class UploadImageHandler implements RequestHandler<Map, GatewayResponse> 
         }
     }
 
-    private String formatObjectKey(final String name, final LocalDateTime timestamp) {
+    private String formatObjectKey(final String name, final String userId, final LocalDateTime timestamp) {
         final String prefix = System.getenv("S3_PREFIX");
         return String.format(
-                "%s/%d/%d/%d/%d/%s",
+                "%s/user-%s/%d/%d/%d/%d/%s",
                 prefix,
+                userId,
                 timestamp.getYear(),
                 timestamp.getMonthValue(),
                 timestamp.getDayOfMonth(),

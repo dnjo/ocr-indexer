@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+import static net.dnjo.AuthorizationUtils.parseSubjectFromJwt;
+import static net.dnjo.MapUtils.buildCaseInsensitiveMap;
+
 public class SearchQueryHandler implements RequestHandler<Map, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(SearchQueryHandler.class);
 
@@ -26,7 +29,9 @@ public class SearchQueryHandler implements RequestHandler<Map, GatewayResponse> 
             final String method = (String) pathParameters.get("method");
             final String indices = (String) pathParameters.get("indices");
             logger.info("Building search queries for index/indices {}", indices);
-            final RawSearch search = new RawSearch(method, "POST", (String) input.get("body"), indices);
+            final Map inputHeaders = buildCaseInsensitiveMap((Map) input.get("headers"));
+            final String userId = parseSubjectFromJwt(inputHeaders);
+            final RawSearch search = Jest.buildRawSearchAction(method, (String) input.get("body"), userId);
             logger.info("Running query");
             final JestResult result = Jest.CLIENT.execute(search);
             return new GatewayResponse(result.getJsonString(), headers, 200);

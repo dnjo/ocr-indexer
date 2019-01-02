@@ -3,6 +3,7 @@ package net.dnjo.handler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import net.dnjo.AuthorizationUtils;
 import net.dnjo.dao.ImageDao;
 import net.dnjo.model.GatewayResponse;
 import net.dnjo.model.Image;
@@ -13,6 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static net.dnjo.MapUtils.buildCaseInsensitiveMap;
 
 public class UpdateImageHandler implements RequestHandler<Map, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(UpdateImageHandler.class);
@@ -33,7 +36,9 @@ public class UpdateImageHandler implements RequestHandler<Map, GatewayResponse> 
             final String text = (String) body.get("text");
             final String ocrText = (String) body.get("ocrText");
             logger.info("Updating image with ID {}", imageId);
-            final Image image = imageDao.updateImage(imageId, new ImageUpdate(text, ocrText));
+            final Map inputHeaders = buildCaseInsensitiveMap((Map) input.get("headers"));
+            final String userId = AuthorizationUtils.parseSubjectFromJwt(inputHeaders);
+            final Image image = imageDao.updateImage(imageId, userId, new ImageUpdate(text, ocrText));
             return new JsonGatewayResponse(image, headers, 200);
         } catch (Exception e) {
             logger.error("Got an error while updating image", e);

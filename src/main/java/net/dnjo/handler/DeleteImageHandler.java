@@ -13,7 +13,9 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+import static net.dnjo.AuthorizationUtils.parseSubjectFromJwt;
 import static net.dnjo.Jest.buildUpsertAction;
+import static net.dnjo.MapUtils.buildCaseInsensitiveMap;
 
 public class DeleteImageHandler implements RequestHandler<Map, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(DeleteImageHandler.class);
@@ -27,8 +29,10 @@ public class DeleteImageHandler implements RequestHandler<Map, GatewayResponse> 
         try {
             final Map pathParameters = (Map) input.get("pathParameters");
             final String imageId = (String) pathParameters.get("image_id");
-            final Update upsertAction = buildUpsertAction(imageId, new FieldValue("present", false));
-            logger.info("Delete image with ID {}", imageId);
+            final Map inputHeaders = buildCaseInsensitiveMap((Map) input.get("headers"));
+            final String userId = parseSubjectFromJwt(inputHeaders);
+            final Update upsertAction = buildUpsertAction(imageId, userId, new FieldValue("present", false));
+            logger.info("Deleting image with ID {}", imageId);
             Jest.CLIENT.execute(upsertAction);
             final Map<String, Object> result = new HashMap<>();
             result.put("success", true);

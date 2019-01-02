@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+import static net.dnjo.AuthorizationUtils.parseSubjectFromJwt;
+import static net.dnjo.MapUtils.buildCaseInsensitiveMap;
+
 public class GetImageHandler implements RequestHandler<Map, GatewayResponse> {
     private static final Logger logger = LoggerFactory.getLogger(GetImageHandler.class);
 
@@ -27,7 +30,9 @@ public class GetImageHandler implements RequestHandler<Map, GatewayResponse> {
             final Map pathParameters = (Map) input.get("pathParameters");
             final String imageId = (String) pathParameters.get("image_id");
             logger.info("Getting image document with ID {}", imageId);
-            final Image image = imageDao.findImage(imageId);
+            final Map inputHeaders = buildCaseInsensitiveMap((Map) input.get("headers"));
+            final String userId = parseSubjectFromJwt(inputHeaders);
+            final Image image = imageDao.findImage(imageId, userId);
             return new JsonGatewayResponse(image, headers, 200);
         } catch (Exception e) {
             logger.error("Got an error while getting image document", e);
