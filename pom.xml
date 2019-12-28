@@ -59,11 +59,6 @@
             <version>6.5.4</version>
         </dependency>
         <dependency>
-            <groupId>vc.inreach.aws</groupId>
-            <artifactId>aws-signing-request-interceptor</artifactId>
-            <version>0.0.22</version>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
             <version>2.9.8</version>
